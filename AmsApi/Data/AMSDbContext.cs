@@ -1,5 +1,10 @@
-﻿using AmsApi.Models; // Ensure you have the correct namespace for your models
+﻿ // Ensure you have the correct namespace for your models
 using Microsoft.EntityFrameworkCore;
+using System.Diagnostics;
+using AmsApi.Models;
+using AmsApi.Model;
+
+
 
 namespace AmsApi.Data
 {
@@ -7,6 +12,7 @@ namespace AmsApi.Data
     {
         public AMSDbContext(DbContextOptions<AMSDbContext> options) : base(options)
         {
+             
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -17,6 +23,16 @@ namespace AmsApi.Data
 
         // Define DbSets for your entities here
         public DbSet<Asset> Assets { get; set; }
+        public DbSet<Assignment> Assignments { get; set; }
+        public DbSet<AssetRequest> AssetRequests { get; set; }
+        public DbSet<TransferDetails> TransferDetails { get; set; }
+        public DbSet<AssetType> AssetTypes { get; set; }
+        public DbSet<Employee> Employees { get; set; }
+        public DbSet<Branch> Branches { get; set; }
+        public DbSet<Department> Departments { get; set; }
+        public DbSet<SellOrDispose> SellOrDisposes { get; set; }
+        public DbSet<AssetDocument> AssetDocuments { get; set; }
+
         // public DbSet<AnotherEntity> AnotherEntities { get; set; }
     }
 }
