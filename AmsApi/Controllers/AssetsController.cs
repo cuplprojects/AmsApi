@@ -47,7 +47,7 @@ namespace AmsApi.Controllers
                             query = query.Where(a => a.AssetsName.ToLower().Contains(lowerSearch));
                             break;
                         case "assettype":
-                            query = query.Where(a => a.AssetType.ToString().ToLower().Contains(lowerSearch));
+                            query = query.Where(a => a.AssetTypeID.ToString().ToLower().Contains(lowerSearch));
                             break;
                         case "assetcategoryid":
                             query = query.Where(a => a.AssetCategoryID.ToString().Contains(lowerSearch));
@@ -67,11 +67,9 @@ namespace AmsApi.Controllers
                         case "invoicenumber":
                             query = query.Where(a => (a.InvoiceNumber ?? "").ToLower().Contains(lowerSearch));
                             break;
-                        case "amcdetails":
-                            query = query.Where(a => (a.AMCDetails ?? "").ToLower().Contains(lowerSearch));
-                            break;
+                        
                         case "currentstatus":
-                            query = query.Where(a => (a.CurrentStatus ?? "").ToLower().Contains(lowerSearch));
+                            query = query.Where(a => a.AssetStatusID .ToString().Contains(lowerSearch));
                             break;
                         case "assetcondition":
                             query = query.Where(a => (a.AssetCondition ?? "").ToLower().Contains(lowerSearch));
@@ -92,15 +90,15 @@ namespace AmsApi.Controllers
                     // Search across all fields
                     query = query.Where(a =>
                         a.AssetsName.ToLower().Contains(lowerSearch) ||
-                        a.AssetType.ToString().ToLower().Contains(lowerSearch) ||
+                        a.AssetTypeID.ToString().ToLower().Contains(lowerSearch) ||
                         a.AssetCategoryID.ToString().Contains(lowerSearch) ||
                         (a.SerialNumberModelNumber ?? "").ToLower().Contains(lowerSearch) ||
                         (a.ModelDetails ?? "").ToLower().Contains(lowerSearch) ||
                         (a.BarcodeQRCode ?? "").ToLower().Contains(lowerSearch) ||
                         (a.SupplierVendorName ?? "").ToLower().Contains(lowerSearch) ||
                         (a.InvoiceNumber ?? "").ToLower().Contains(lowerSearch) ||
-                        (a.AMCDetails ?? "").ToLower().Contains(lowerSearch) ||
-                        (a.CurrentStatus ?? "").ToLower().Contains(lowerSearch) ||
+                        //(a.AMCDetails ?? "").ToLower().Contains(lowerSearch) ||
+                        a.AssetStatusID.ToString().Contains(lowerSearch) ||
                         (a.AssetCondition ?? "").ToLower().Contains(lowerSearch) ||
                         (a.RemarksNotes ?? "").ToLower().Contains(lowerSearch) ||
                         (a.DefaultLocation ?? "").ToLower().Contains(lowerSearch)

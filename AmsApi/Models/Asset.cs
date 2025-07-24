@@ -8,19 +8,14 @@ namespace AmsApi.Models
     public class Asset
     {
         [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int AssetID { get; set; }
 
         [Required]
         [StringLength(255)]
         public string AssetsName { get; set; }
-
-      
-        //public int AssetTypeID { get; set; }
-        public int AssetType { get; set; }
-
-       
-        public int? AssetCategoryID { get; set; }
-
+        public int? AssetCategoryID { get; set; }  
+        public int AssetTypeID { get; set; }
         [StringLength(255)]
         public string? SerialNumberModelNumber { get; set; }
 
@@ -42,15 +37,12 @@ namespace AmsApi.Models
 
         public DateTime? WarrantyStartDate { get; set; }
 
-        public DateTime? WarrantyEndDate { get; set; }
+        public DateTime? WarrantyEndDate { get; set; }       
 
-        //public string? UploadedDocuments { get; set; } // You can also use JsonDocument or a DTO for complex structures
 
-        [StringLength(500)]
-        public string? AMCDetails { get; set; }
 
-        [StringLength(20)]
-        public string? CurrentStatus { get; set; } // Assigned / Unassigned / Under Repair / Retired
+    
+        public int? AssetStatusID { get; set; } // Assigned / Unassigned / Under Repair / Retired
 
         [StringLength(20)]
         public string? AssetCondition { get; set; } // Good / Average / Needs Repair / Retired
