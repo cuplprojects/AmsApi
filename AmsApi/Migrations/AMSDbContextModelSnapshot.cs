@@ -165,9 +165,8 @@ namespace AmsApi.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("varchar(500)");
 
-                    b.Property<string>("AssetCategory")
-                        .HasMaxLength(100)
-                        .HasColumnType("varchar(100)");
+                    b.Property<int?>("AssetCategoryID")
+                        .HasColumnType("int");
 
                     b.Property<string>("AssetCondition")
                         .HasMaxLength(20)
@@ -227,6 +226,38 @@ namespace AmsApi.Migrations
                     b.HasKey("AssetID");
 
                     b.ToTable("Assets");
+                });
+
+            modelBuilder.Entity("AmsApi.Models.AssetDocument", b =>
+                {
+                    b.Property<int>("AssetDocumentID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("AssetDocumentID"));
+
+                    b.Property<int>("AssetID")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
+
+                    b.Property<string>("FileName")
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
+
+                    b.Property<string>("FilePath")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("varchar(1000)");
+
+                    b.Property<DateTime>("UploadedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.HasKey("AssetDocumentID");
+
+                    b.ToTable("AssetDocuments");
                 });
 
             modelBuilder.Entity("AmsApi.Models.AssetRequest", b =>

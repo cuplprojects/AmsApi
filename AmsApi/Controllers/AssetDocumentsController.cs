@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
@@ -44,6 +43,7 @@ namespace AmsApi.Controllers
         }
 
         // PUT: api/AssetDocuments/5
+        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
         public async Task<IActionResult> PutAssetDocument(int id, AssetDocument assetDocument)
         {
@@ -73,61 +73,73 @@ namespace AmsApi.Controllers
             return NoContent();
         }
 
-        // Standard POST (without file upload)
+        // POST: api/AssetDocuments
+        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<AssetDocument>> PostAssetDocument(AssetDocument assetDocument)
+        public async Task<ActionResult> PostAssetDocument([FromForm] AssetDocumentInput input)
         {
-            _context.AssetDocuments.Add(assetDocument);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction("GetAssetDocument", new { id = assetDocument.AssetDocumentID }, assetDocument);
-        }
-
-        // POST: api/AssetDocuments/upload
-        [HttpPost("upload")]
-        public async Task<ActionResult<AssetDocument>> UploadAssetDocument(
-            [FromForm] int assetId,
-            [FromForm] IFormFile file,
-            [FromForm] string? description)
-        {
-            if (file == null || file.Length == 0)
-                return BadRequest("No file uploaded.");
-
-            // Decide folder
-            string folder = file.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase) ? "Images" : "Documents";
-            string wwwRootPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", folder);
-
-            if (!Directory.Exists(wwwRootPath))
-                Directory.CreateDirectory(wwwRootPath);
-
-            string originalFileName = Path.GetFileName(file.FileName);
-            string uniqueFileName = $"{Guid.NewGuid()}_{originalFileName}";
-            string savedFilePath = Path.Combine(wwwRootPath, uniqueFileName);
-
-            // Save file to disk
-            using (var fileStream = new FileStream(savedFilePath, FileMode.Create))
+            try
             {
-                await file.CopyToAsync(fileStream);
+                if (input.File == null || input.File.Length == 0)
+                    return BadRequest("File is missing.");
+
+                // Validate folder input
+                string folderName = input.TargetFolder?.Trim().ToLower() switch
+                {
+                    "images" => "Images",
+                    "documents" => "Documents",
+                    _ => "Documents" // default fallback
+                };
+
+                string rootPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", folderName);
+                if (!Directory.Exists(rootPath))
+                    Directory.CreateDirectory(rootPath);
+
+                string uniqueFileName = $"{Guid.NewGuid()}_{Path.GetFileName(input.File.FileName)}";
+                string absoluteFilePath = Path.Combine(rootPath, uniqueFileName);
+                string relativeFilePath = Path.Combine(folderName, uniqueFileName); // Relative for DB
+
+                // Save file
+                using (var stream = new FileStream(absoluteFilePath, FileMode.Create))
+                {
+                    await input.File.CopyToAsync(stream);
+                }
+
+                // Save to DB
+                var document = new AssetDocument
+                {
+                    AssetID = input.AssetID,
+                    FilePath = relativeFilePath,
+                    FileName = input.File.FileName,
+                    Description = input.Description,
+                    UploadedAt = DateTime.Now
+                };
+
+                _context.AssetDocuments.Add(document);
+                await _context.SaveChangesAsync();
+
+                return CreatedAtAction("GetAssetDocument", new { id = document.AssetDocumentID }, document);
             }
-
-            // Create relative path for the database
-            string relativeFilePath = Path.Combine(folder, uniqueFileName).Replace("\\", "/");
-
-            var assetDocument = new AssetDocument
+            catch (Exception ex)
             {
-                AssetID = assetId,
-                FilePath = relativeFilePath,
-                FileType = file.ContentType,
-                FileName = originalFileName,
-                UploadedAt = DateTime.Now,
-                Description = description
-            };
-
-            _context.AssetDocuments.Add(assetDocument);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction(nameof(GetAssetDocument), new { id = assetDocument.AssetDocumentID }, assetDocument);
+                return StatusCode(500, "Internal server error: " + ex.Message);
+            }
         }
+
+
+        public class AssetDocumentInput
+        {
+            public int AssetID { get; set; }
+
+            public IFormFile File { get; set; }
+
+            public string? Description { get; set; }
+
+            public string? TargetFolder { get; set; } // "Images" or "Documents"
+        }
+
+
+
 
         // DELETE: api/AssetDocuments/5
         [HttpDelete("{id}")]
@@ -137,16 +149,6 @@ namespace AmsApi.Controllers
             if (assetDocument == null)
             {
                 return NotFound();
-            }
-
-            // Delete file from disk
-            if (!string.IsNullOrEmpty(assetDocument.FilePath))
-            {
-                var fullPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", assetDocument.FilePath.Replace("/", Path.DirectorySeparatorChar.ToString()));
-                if (System.IO.File.Exists(fullPath))
-                {
-                    System.IO.File.Delete(fullPath);
-                }
             }
 
             _context.AssetDocuments.Remove(assetDocument);

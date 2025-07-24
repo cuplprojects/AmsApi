@@ -18,8 +18,6 @@ namespace AmsApi.Models
         [StringLength(1000)]
         public string FilePath { get; set; }  // Path to the stored document/image
 
-        [StringLength(255)]
-        public string? FileType { get; set; }  // e.g., "image/jpeg", "application/pdf"
 
         [StringLength(255)]
         public string? FileName { get; set; }  // Optional: original file name

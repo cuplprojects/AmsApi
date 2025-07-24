@@ -18,8 +18,8 @@ namespace AmsApi.Models
         //public int AssetTypeID { get; set; }
         public int AssetType { get; set; }
 
-        [StringLength(100)]
-        public string? AssetCategory { get; set; }
+       
+        public int? AssetCategoryID { get; set; }
 
         [StringLength(255)]
         public string? SerialNumberModelNumber { get; set; }
