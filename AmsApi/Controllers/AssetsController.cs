@@ -21,98 +21,50 @@ namespace AmsApi.Controllers
             _context = context;
         }
 
-        // GET: api/Assets
         [HttpGet]
         public async Task<ActionResult<object>> GetAssets(
-           [FromQuery] string? search,
-           [FromQuery] string? searchColumn,
-           [FromQuery] string? sortBy = "AssetsName",
-           [FromQuery] string? sortOrder = "asc",
-           [FromQuery] int page = 1,
-           [FromQuery] int pageSize = 10
-       )
+            [FromQuery] Dictionary<string, string> filters,
+            [FromQuery] string? sortBy = "AssetsName",
+            [FromQuery] string? sortOrder = "asc",
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10
+        )
         {
             IQueryable<Asset> query = _context.Assets;
 
-            // Apply search
-            if (!string.IsNullOrWhiteSpace(search))
-            {
-                string lowerSearch = search.ToLower();
+            var assetProperties = typeof(Asset).GetProperties();
 
-                if (!string.IsNullOrWhiteSpace(searchColumn))
+            foreach (var filter in filters)
+            {
+                var key = filter.Key;
+                var value = filter.Value?.ToLower() ?? "";
+
+                var prop = assetProperties.FirstOrDefault(p =>
+                    string.Equals(p.Name, key, StringComparison.OrdinalIgnoreCase));
+
+                if (prop == null) continue;
+
+                if (prop.PropertyType == typeof(string))
                 {
-                    switch (searchColumn.ToLower())
-                    {
-                        case "assetsname":
-                            query = query.Where(a => a.AssetsName.ToLower().Contains(lowerSearch));
-                            break;
-                        case "assettype":
-                            query = query.Where(a => a.AssetType.ToString().ToLower().Contains(lowerSearch));
-                            break;
-                        case "assetcategoryid":
-                            query = query.Where(a => a.AssetCategoryID.ToString().Contains(lowerSearch));
-                            break;
-                        case "serialnumbermodelnumber":
-                            query = query.Where(a => (a.SerialNumberModelNumber ?? "").ToLower().Contains(lowerSearch));
-                            break;
-                        case "modeldetails":
-                            query = query.Where(a => (a.ModelDetails ?? "").ToLower().Contains(lowerSearch));
-                            break;
-                        case "barcodeqrcode":
-                            query = query.Where(a => (a.BarcodeQRCode ?? "").ToLower().Contains(lowerSearch));
-                            break;
-                        case "suppliervendorname":
-                            query = query.Where(a => (a.SupplierVendorName ?? "").ToLower().Contains(lowerSearch));
-                            break;
-                        case "invoicenumber":
-                            query = query.Where(a => (a.InvoiceNumber ?? "").ToLower().Contains(lowerSearch));
-                            break;
-                        case "amcdetails":
-                            query = query.Where(a => (a.AMCDetails ?? "").ToLower().Contains(lowerSearch));
-                            break;
-                        case "currentstatus":
-                            query = query.Where(a => (a.CurrentStatus ?? "").ToLower().Contains(lowerSearch));
-                            break;
-                        case "assetcondition":
-                            query = query.Where(a => (a.AssetCondition ?? "").ToLower().Contains(lowerSearch));
-                            break;
-                        case "remarksnotes":
-                            query = query.Where(a => (a.RemarksNotes ?? "").ToLower().Contains(lowerSearch));
-                            break;
-                        case "defaultlocation":
-                            query = query.Where(a => (a.DefaultLocation ?? "").ToLower().Contains(lowerSearch));
-                            break;
-                        default:
-                            // Invalid search column, optionally return BadRequest
-                            return BadRequest("Invalid searchColumn.");
-                    }
-                }
-                else
-                {
-                    // Search across all fields
                     query = query.Where(a =>
-                        a.AssetsName.ToLower().Contains(lowerSearch) ||
-                        a.AssetType.ToString().ToLower().Contains(lowerSearch) ||
-                        a.AssetCategoryID.ToString().Contains(lowerSearch) ||
-                        (a.SerialNumberModelNumber ?? "").ToLower().Contains(lowerSearch) ||
-                        (a.ModelDetails ?? "").ToLower().Contains(lowerSearch) ||
-                        (a.BarcodeQRCode ?? "").ToLower().Contains(lowerSearch) ||
-                        (a.SupplierVendorName ?? "").ToLower().Contains(lowerSearch) ||
-                        (a.InvoiceNumber ?? "").ToLower().Contains(lowerSearch) ||
-                        (a.AMCDetails ?? "").ToLower().Contains(lowerSearch) ||
-                        (a.CurrentStatus ?? "").ToLower().Contains(lowerSearch) ||
-                        (a.AssetCondition ?? "").ToLower().Contains(lowerSearch) ||
-                        (a.RemarksNotes ?? "").ToLower().Contains(lowerSearch) ||
-                        (a.DefaultLocation ?? "").ToLower().Contains(lowerSearch)
-                    );
+                        EF.Functions.Like(EF.Property<string>(a, prop.Name), $"%{value}%"));
                 }
+                else if (prop.PropertyType == typeof(int) && int.TryParse(value, out int intVal))
+                {
+                    query = query.Where(a => EF.Property<int>(a, prop.Name) == intVal);
+                }
+                else if (prop.PropertyType == typeof(int?) && int.TryParse(value, out int intValNullable))
+                {
+                    query = query.Where(a => EF.Property<int?>(a, prop.Name) == intValNullable);
+                }
+                else if (prop.PropertyType.IsEnum && Enum.TryParse(prop.PropertyType, value, true, out object? enumVal))
+                {
+                    query = query.Where(a => EF.Property<object>(a, prop.Name).ToString().ToLower() == value);
+                }
+                // Add more types if needed (DateTime, bool, etc.)
             }
 
-            // Count total
-            int totalCount = await query.CountAsync();
-            int totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
-
-            // Sort dynamically using EF.Property (database-side)
+            // Apply sorting
             if (!string.IsNullOrWhiteSpace(sortBy))
             {
                 try
@@ -127,27 +79,28 @@ namespace AmsApi.Controllers
                 }
             }
 
-            // Apply pagination
+            // Count and paginate
+            int totalCount = await query.CountAsync();
+            int totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
+
             var pagedData = await query
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
 
-            // Return response
+            // Return result
             return Ok(new
             {
                 TotalCount = totalCount,
                 TotalPages = totalPages,
                 Page = page,
                 PageSize = pageSize,
-                SearchColumn = searchColumn,
+                Filters = filters,
                 SortBy = sortBy,
                 SortOrder = sortOrder,
                 Data = pagedData
             });
         }
-
-
 
 
 
