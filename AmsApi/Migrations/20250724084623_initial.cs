@@ -7,12 +7,33 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace AmsApi.Migrations
 {
     /// <inheritdoc />
-    public partial class ch : Migration
+    public partial class initial : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.AlterDatabase()
+                .Annotation("MySql:CharSet", "utf8mb4");
+
+            migrationBuilder.CreateTable(
+                name: "AssetDocuments",
+                columns: table => new
+                {
+                    AssetDocumentID = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
+                    AssetID = table.Column<int>(type: "int", nullable: false),
+                    FilePath = table.Column<string>(type: "varchar(1000)", maxLength: 1000, nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    FileName = table.Column<string>(type: "varchar(255)", maxLength: 255, nullable: true)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    UploadedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false),
+                    Description = table.Column<string>(type: "varchar(500)", maxLength: 500, nullable: true)
+                        .Annotation("MySql:CharSet", "utf8mb4")
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AssetDocuments", x => x.AssetDocumentID);
+                })
                 .Annotation("MySql:CharSet", "utf8mb4");
 
             migrationBuilder.CreateTable(
@@ -47,8 +68,7 @@ namespace AmsApi.Migrations
                     AssetsName = table.Column<string>(type: "varchar(255)", maxLength: 255, nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     AssetType = table.Column<int>(type: "int", nullable: false),
-                    AssetCategory = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: true)
-                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    AssetCategoryID = table.Column<int>(type: "int", nullable: true),
                     SerialNumberModelNumber = table.Column<string>(type: "varchar(255)", maxLength: 255, nullable: true)
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     ModelDetails = table.Column<string>(type: "varchar(1000)", maxLength: 1000, nullable: true)
@@ -242,6 +262,9 @@ namespace AmsApi.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropTable(
+                name: "AssetDocuments");
+
             migrationBuilder.DropTable(
                 name: "AssetRequests");
 
