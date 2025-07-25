@@ -15,6 +15,6 @@ namespace AmsApi.Models
 
         public string OccuranceSpace { get; set; }
 
-        public DateTime LoggedAt { get; set; } = TimeZoneInfo.ConvertTime(DateTime.UtcNow, TimeZoneInfo.FindSystemTimeZoneById("India Standard Time"));
+        public DateTime CreatedAt { get; set; } = DateTime.Now; // Add this property
     }
 }
