@@ -46,8 +46,68 @@ namespace AmsApi.Controllers
 
                 if (prop.PropertyType == typeof(string))
                 {
+                    switch (searchColumn.ToLower())
+                    {
+                        case "assetsname":
+                            query = query.Where(a => a.AssetsName.ToLower().Contains(lowerSearch));
+                            break;
+                        case "assettype":
+                            query = query.Where(a => a.AssetTypeID.ToString().ToLower().Contains(lowerSearch));
+                            break;
+                        case "assetcategoryid":
+                            query = query.Where(a => a.AssetCategoryID.ToString().Contains(lowerSearch));
+                            break;
+                        case "serialnumbermodelnumber":
+                            query = query.Where(a => (a.SerialNumberModelNumber ?? "").ToLower().Contains(lowerSearch));
+                            break;
+                        case "modeldetails":
+                            query = query.Where(a => (a.ModelDetails ?? "").ToLower().Contains(lowerSearch));
+                            break;
+                        case "barcodeqrcode":
+                            query = query.Where(a => (a.BarcodeQRCode ?? "").ToLower().Contains(lowerSearch));
+                            break;
+                        case "suppliervendorname":
+                            query = query.Where(a => (a.SupplierVendorName ?? "").ToLower().Contains(lowerSearch));
+                            break;
+                        case "invoicenumber":
+                            query = query.Where(a => (a.InvoiceNumber ?? "").ToLower().Contains(lowerSearch));
+                            break;
+                        
+                        case "currentstatus":
+                            query = query.Where(a => a.AssetStatusID .ToString().Contains(lowerSearch));
+                            break;
+                        case "assetcondition":
+                            query = query.Where(a => (a.AssetCondition ?? "").ToLower().Contains(lowerSearch));
+                            break;
+                        case "remarksnotes":
+                            query = query.Where(a => (a.RemarksNotes ?? "").ToLower().Contains(lowerSearch));
+                            break;
+                        case "defaultlocation":
+                            query = query.Where(a => (a.DefaultLocation ?? "").ToLower().Contains(lowerSearch));
+                            break;
+                        default:
+                            // Invalid search column, optionally return BadRequest
+                            return BadRequest("Invalid searchColumn.");
+                    }
+                }
+                else
+                {
+                    // Search across all fields
                     query = query.Where(a =>
-                        EF.Functions.Like(EF.Property<string>(a, prop.Name), $"%{value}%"));
+                        a.AssetsName.ToLower().Contains(lowerSearch) ||
+                        a.AssetTypeID.ToString().ToLower().Contains(lowerSearch) ||
+                        a.AssetCategoryID.ToString().Contains(lowerSearch) ||
+                        (a.SerialNumberModelNumber ?? "").ToLower().Contains(lowerSearch) ||
+                        (a.ModelDetails ?? "").ToLower().Contains(lowerSearch) ||
+                        (a.BarcodeQRCode ?? "").ToLower().Contains(lowerSearch) ||
+                        (a.SupplierVendorName ?? "").ToLower().Contains(lowerSearch) ||
+                        (a.InvoiceNumber ?? "").ToLower().Contains(lowerSearch) ||
+                        //(a.AMCDetails ?? "").ToLower().Contains(lowerSearch) ||
+                        a.AssetStatusID.ToString().Contains(lowerSearch) ||
+                        (a.AssetCondition ?? "").ToLower().Contains(lowerSearch) ||
+                        (a.RemarksNotes ?? "").ToLower().Contains(lowerSearch) ||
+                        (a.DefaultLocation ?? "").ToLower().Contains(lowerSearch)
+                    );
                 }
                 else if (prop.PropertyType == typeof(int) && int.TryParse(value, out int intVal))
                 {

@@ -32,6 +32,10 @@ namespace AmsApi.Data
         public DbSet<Department> Departments { get; set; }
         public DbSet<SellOrDispose> SellOrDisposes { get; set; }
         public DbSet<AssetDocument> AssetDocuments { get; set; }
+        public DbSet<EventLogs> eventLogs { get; set; }
+        public DbSet<ErrorLog> errorLogs { get; set; }
+        public DbSet<AssetStatus> assetStatus { get; set; }
+        public DbSet<AssetCategory> assetCategories { get; set; }
 
         // public DbSet<AnotherEntity> AnotherEntities { get; set; }
     }
