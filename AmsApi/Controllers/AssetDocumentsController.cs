@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using AmsApi.Data;
 using AmsApi.Models;
+using AmsApi.Services;
 
 namespace AmsApi.Controllers
 {
@@ -15,10 +16,12 @@ namespace AmsApi.Controllers
     public class AssetDocumentsController : ControllerBase
     {
         private readonly AMSDbContext _context;
+        private readonly ILoggerService _loggerService;
 
-        public AssetDocumentsController(AMSDbContext context)
+        public AssetDocumentsController(AMSDbContext context, ILoggerService loggerService)
         {
             _context = context;
+            _loggerService = loggerService;
         }
 
         // GET: api/AssetDocuments
@@ -81,7 +84,10 @@ namespace AmsApi.Controllers
             try
             {
                 if (input.File == null || input.File.Length == 0)
+                {
+                    _loggerService.LogError("File validation failed", "File is missing or empty", "AssetDocumentController");
                     return BadRequest("File is missing.");
+                }
 
                 // Validate folder input
                 string folderName = input.TargetFolder?.Trim().ToLower() switch
@@ -118,14 +124,29 @@ namespace AmsApi.Controllers
                 _context.AssetDocuments.Add(document);
                 await _context.SaveChangesAsync();
 
+                // Log successful document upload event
+                _loggerService.LogEvent(
+                    message: $"Asset document uploaded successfully for AssetID: {input.AssetID}",
+                    category: "Document Upload",
+                    triggeredBy: 1,
+                    oldValue: null,
+                    newValue: $"File: {input.File.FileName}, Path: {relativeFilePath}, Description: {input.Description}"
+                );
+
                 return CreatedAtAction("GetAssetDocument", new { id = document.AssetDocumentID }, document);
             }
             catch (Exception ex)
             {
+                // Log the error
+                _loggerService.LogError(
+                    error: "Document upload failed",
+                    errormessage: ex.Message,
+                    controller: "AssetDocumentController"
+                );
+
                 return StatusCode(500, "Internal server error: " + ex.Message);
             }
         }
-
 
         public class AssetDocumentInput
         {
