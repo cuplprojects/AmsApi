@@ -24,194 +24,126 @@ namespace AmsApi.Controllers
             _loggerService = loggerService;
         }
 
-        [HttpGet]
+
+        [HttpGet("GetAssets")]
         public async Task<ActionResult<object>> GetAssets(
-          [FromQuery] string? search,
-          [FromQuery] string? searchColumn,
-          [FromQuery] string? sortBy = "AssetsName",
-          [FromQuery] string? sortOrder = "asc",
-          [FromQuery] int page = 1,
-          [FromQuery] int pageSize = 10
-      )
+        [FromQuery] string? sortBy = "AssetsName",
+        [FromQuery] string? sortOrder = "asc",
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10,
+        [FromQuery] string? search = null,
+        [FromQuery] Dictionary<string, string>? filters = null)
         {
             try
             {
-                // Join AssetCategory and AssetStatus tables
-                var query = from a in _context.Assets
-                            join ac in _context.assetCategories on a.AssetCategoryID equals ac.AssetCategoryID into acGroup
-                            from ac in acGroup.DefaultIfEmpty()
-                            join ast in _context.assetStatus on a.AssetStatusID equals ast.AssetStatusID into astGroup
-                            from ast in astGroup.DefaultIfEmpty()
+                var query = from asset in _context.Assets
+                            join type in _context.AssetTypes on asset.AssetTypeID equals type.AssetTypeID into at
+                            from assetType in at.DefaultIfEmpty()
+                            join category in _context.assetCategories on asset.AssetCategoryID equals category.AssetCategoryID into ac
+                            from assetCategory in ac.DefaultIfEmpty()
+                            join status in _context.assetStatus on asset.AssetStatusID equals status.AssetStatusID into ast
+                            from assetStatus in ast.DefaultIfEmpty()
                             select new
                             {
-                                Asset = a,
-                                CategoryName = ac != null ? ac.CategoryName : null,
-                                Status = ast != null ? ast.Status : null
+                                asset.AssetID,
+                                asset.AssetsName,
+                                asset.AssetCategoryID,
+                                CategoryName = assetCategory != null ? assetCategory.CategoryName : null,
+                                asset.AssetStatusID,
+                                Status = assetStatus != null ? assetStatus.Status : null,
+                                asset.SerialNumberModelNumber,
+                                asset.ModelDetails,
+                                asset.BarcodeQRCode,
+                                asset.SupplierVendorName,
+                                asset.InvoiceNumber,
+                                asset.AssetCondition,
+                                asset.RemarksNotes,
+                                asset.DefaultLocation,
+                                asset.AssetTypeID,
+                                AssetTypeName = assetType != null ? assetType.AssetTypeName : null
                             };
 
-                // Search logic
+                // Global Search
                 if (!string.IsNullOrWhiteSpace(search))
                 {
-                    string lowerSearch = search.ToLower();
-
-                    if (!string.IsNullOrWhiteSpace(searchColumn))
-                    {
-                        switch (searchColumn.ToLower())
-                        {
-                            case "assetsname":
-                                query = query.Where(q => q.Asset.AssetsName.ToLower().Contains(lowerSearch));
-                                break;
-                            case "assettype":
-                                query = query.Where(q => q.Asset.AssetTypeID.ToString().ToLower().Contains(lowerSearch));
-                                break;
-                            case "categoryname":
-                                query = query.Where(q => (q.CategoryName ?? "").ToLower().Contains(lowerSearch));
-                                break;
-                            case "serialnumbermodelnumber":
-                                query = query.Where(q => (q.Asset.SerialNumberModelNumber ?? "").ToLower().Contains(lowerSearch));
-                                break;
-                            case "modeldetails":
-                                query = query.Where(q => (q.Asset.ModelDetails ?? "").ToLower().Contains(lowerSearch));
-                                break;
-                            case "barcodeqrcode":
-                                query = query.Where(q => (q.Asset.BarcodeQRCode ?? "").ToLower().Contains(lowerSearch));
-                                break;
-                            case "suppliervendorname":
-                                query = query.Where(q => (q.Asset.SupplierVendorName ?? "").ToLower().Contains(lowerSearch));
-                                break;
-                            case "invoicenumber":
-                                query = query.Where(q => (q.Asset.InvoiceNumber ?? "").ToLower().Contains(lowerSearch));
-                                break;
-                            case "status":
-                                query = query.Where(q => (q.Status ?? "").ToLower().Contains(lowerSearch));
-                                break;
-                            case "assetcondition":
-                                query = query.Where(q => (q.Asset.AssetCondition ?? "").ToLower().Contains(lowerSearch));
-                                break;
-                            case "remarksnotes":
-                                query = query.Where(q => (q.Asset.RemarksNotes ?? "").ToLower().Contains(lowerSearch));
-                                break;
-                            case "defaultlocation":
-                                query = query.Where(q => (q.Asset.DefaultLocation ?? "").ToLower().Contains(lowerSearch));
-                                break;
-                            default:
-                                _loggerService.LogError(
-                                    error: "Invalid search column provided",
-                                    errormessage: $"SearchColumn '{searchColumn}' is not valid",
-                                    controller: "AssetController"
-                                );
-                                return BadRequest("Invalid searchColumn.");
-                        }
-                    }
-                    else
-                    {
-                        // Global search (all fields)
-                        query = query.Where(q =>
-                            q.Asset.AssetsName.ToLower().Contains(lowerSearch) ||
-                            q.Asset.AssetTypeID.ToString().ToLower().Contains(lowerSearch) ||
-                            (q.CategoryName ?? "").ToLower().Contains(lowerSearch) ||
-                            (q.Asset.SerialNumberModelNumber ?? "").ToLower().Contains(lowerSearch) ||
-                            (q.Asset.ModelDetails ?? "").ToLower().Contains(lowerSearch) ||
-                            (q.Asset.BarcodeQRCode ?? "").ToLower().Contains(lowerSearch) ||
-                            (q.Asset.SupplierVendorName ?? "").ToLower().Contains(lowerSearch) ||
-                            (q.Asset.InvoiceNumber ?? "").ToLower().Contains(lowerSearch) ||
-                            (q.Status ?? "").ToLower().Contains(lowerSearch) ||
-                            (q.Asset.AssetCondition ?? "").ToLower().Contains(lowerSearch) ||
-                            (q.Asset.RemarksNotes ?? "").ToLower().Contains(lowerSearch) ||
-                            (q.Asset.DefaultLocation ?? "").ToLower().Contains(lowerSearch)
-                        );
-                    }
+                    var lowerSearch = search.ToLower();
+                    query = query.Where(a =>
+                        (a.AssetsName != null && a.AssetsName.ToLower().Contains(lowerSearch)) ||
+                        (a.CategoryName != null && a.CategoryName.ToLower().Contains(lowerSearch)) ||
+                        (a.ModelDetails != null && a.ModelDetails.ToLower().Contains(lowerSearch)) ||
+                        (a.BarcodeQRCode != null && a.BarcodeQRCode.ToLower().Contains(lowerSearch)) ||
+                        (a.SupplierVendorName != null && a.SupplierVendorName.ToLower().Contains(lowerSearch)) ||
+                        (a.InvoiceNumber != null && a.InvoiceNumber.ToLower().Contains(lowerSearch)) ||
+                        (a.AssetCondition != null && a.AssetCondition.ToLower().Contains(lowerSearch)) ||
+                        (a.RemarksNotes != null && a.RemarksNotes.ToLower().Contains(lowerSearch)) ||
+                        (a.DefaultLocation != null && a.DefaultLocation.ToLower().Contains(lowerSearch)) ||
+                        (a.AssetTypeName != null && a.AssetTypeName.ToLower().Contains(lowerSearch)) ||
+                        (a.Status != null && a.Status.ToLower().Contains(lowerSearch))
+                    );
                 }
 
-                // Validate pagination
-                if (page < 1)
+                // Filtering
+                if (filters != null && filters.Any())
                 {
-                    _loggerService.LogError("Invalid pagination parameter", $"Page number must be greater than 0. Provided: {page}", "AssetController");
-                    return BadRequest("Page number must be greater than 0.");
-                }
-
-                if (pageSize < 1 || pageSize > 100)
-                {
-                    _loggerService.LogError("Invalid page size parameter", $"Page size must be between 1 and 100. Provided: {pageSize}", "AssetController");
-                    return BadRequest("Page size must be between 1 and 100.");
-                }
-
-                int totalCount = await query.CountAsync();
-                int totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
-
-                // Sorting logic with if-else to avoid switch expression error
-                if (!string.IsNullOrWhiteSpace(sortBy))
-                {
-                    try
+                    foreach (var filter in filters)
                     {
-                        if (sortOrder?.ToLower() == "desc")
+                        var key = filter.Key.ToLower();
+                        var value = filter.Value.ToLower();
+
+                        query = key switch
                         {
-                            if (sortBy.ToLower() == "categoryname")
-                                query = query.OrderByDescending(q => q.CategoryName);
-                            else if (sortBy.ToLower() == "status")
-                                query = query.OrderByDescending(q => q.Status);
-                            else
-                                query = query.OrderByDescending(q => EF.Property<object>(q.Asset, sortBy));
-                        }
-                        else
-                        {
-                            if (sortBy.ToLower() == "categoryname")
-                                query = query.OrderBy(q => q.CategoryName);
-                            else if (sortBy.ToLower() == "status")
-                                query = query.OrderBy(q => q.Status);
-                            else
-                                query = query.OrderBy(q => EF.Property<object>(q.Asset, sortBy));
-                        }
-                    }
-                    catch (Exception sortEx)
-                    {
-                        _loggerService.LogError("Invalid sort column", $"SortBy column '{sortBy}' is not valid. Error: {sortEx.Message}", "AssetController");
-                        return BadRequest("Invalid sortBy column.");
+                            "categoryname" => query.Where(a => a.CategoryName != null && a.CategoryName.ToLower().Contains(value)),
+                            "modeldetails" => query.Where(a => a.ModelDetails != null && a.ModelDetails.ToLower().Contains(value)),
+                            "barcodeqrcode" => query.Where(a => a.BarcodeQRCode != null && a.BarcodeQRCode.ToLower().Contains(value)),
+                            "assetsname" => query.Where(a => a.AssetsName != null && a.AssetsName.ToLower().Contains(value)),
+                            "assettypename" => query.Where(a => a.AssetTypeName != null && a.AssetTypeName.ToLower().Contains(value)),
+                            _ => query
+                        };
                     }
                 }
 
-                // Final paginated result
-                var pagedData = await query
+                // Sorting
+                if (!string.IsNullOrEmpty(sortBy))
+                {
+                    var isAsc = sortOrder?.ToLower() != "desc";
+                    query = sortBy.ToLower() switch
+                    {
+                        "assetid" => isAsc ? query.OrderBy(a => a.AssetID) : query.OrderByDescending(a => a.AssetID),
+                        "assetsname" => isAsc ? query.OrderBy(a => a.AssetsName) : query.OrderByDescending(a => a.AssetsName),
+                        "categoryname" => isAsc ? query.OrderBy(a => a.CategoryName) : query.OrderByDescending(a => a.CategoryName),
+                        "assettypename" => isAsc ? query.OrderBy(a => a.AssetTypeName) : query.OrderByDescending(a => a.AssetTypeName),
+                        "modeldetails" => isAsc ? query.OrderBy(a => a.ModelDetails) : query.OrderByDescending(a => a.ModelDetails),
+                        _ => query.OrderBy(a => a.AssetID)
+                    };
+                }
+
+                var totalCount = await query.CountAsync();
+                var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
+
+                var result = await query
                     .Skip((page - 1) * pageSize)
                     .Take(pageSize)
-                    .Select(q => new
-                    {
-                        q.Asset.AssetID,
-                        q.Asset.AssetsName,
-                        q.Asset.AssetCategoryID,
-                        CategoryName = q.CategoryName,
-                        q.Asset.AssetStatusID,
-                        Status = q.Status,
-                        q.Asset.SerialNumberModelNumber,
-                        q.Asset.ModelDetails,
-                        q.Asset.BarcodeQRCode,
-                        q.Asset.SupplierVendorName,
-                        q.Asset.InvoiceNumber,
-                        q.Asset.AssetCondition,
-                        q.Asset.RemarksNotes,
-                        q.Asset.DefaultLocation,
-                        q.Asset.AssetTypeID
-                    })
                     .ToListAsync();
 
                 return Ok(new
                 {
-                    TotalCount = totalCount,
-                    TotalPages = totalPages,
-                    Page = page,
-                    PageSize = pageSize,
-                    SearchColumn = searchColumn,
-                    SortBy = sortBy,
-                    SortOrder = sortOrder,
-                    Data = pagedData
+                    totalCount,
+                    totalPages,
+                    page,
+                    pageSize,
+                    search,
+                    filters,
+                    sortBy = sortBy?.ToLower(),
+                    sortOrder = sortOrder?.ToLower(),
+                    data = result
                 });
             }
             catch (Exception ex)
             {
-                _loggerService.LogError("Failed to retrieve assets", ex.Message, "AssetController");
-                return StatusCode(500, "Internal server error occurred while retrieving assets.");
+                return StatusCode(500, $"Internal server error occurred while retrieving assets: {ex.Message}");
             }
         }
+
 
 
 
