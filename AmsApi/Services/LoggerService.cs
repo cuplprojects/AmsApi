@@ -1,11 +1,9 @@
 ﻿using AmsApi.Data;
-using System.Diagnostics;
-using AmsApi.Services;
 using AmsApi.Models;
 
 namespace AmsApi.Services
 {
-    public class LoggerService:ILoggerService
+    public class LoggerService : ILoggerService
     {
         private readonly AMSDbContext _aMSDbContext;
 
@@ -13,6 +11,7 @@ namespace AmsApi.Services
         {
             _aMSDbContext = aMSDbContext;
         }
+
         public void LogEvent(string message, string category, int triggeredBy, string oldValue = null, string newValue = null)
         {
             var log = new EventLogs
@@ -20,8 +19,9 @@ namespace AmsApi.Services
                 Event = message,
                 EventTriggeredBy = triggeredBy,
                 Category = category,
-                OldValue = oldValue,  // Log the old value if available
-                NewValue = newValue   // Log the new value if available
+                OldValue = oldValue,
+                NewValue = newValue,
+                CreatedAt = DateTime.Now
             };
             _aMSDbContext.eventLogs.Add(log);
             _aMSDbContext.SaveChanges();
@@ -34,6 +34,7 @@ namespace AmsApi.Services
                 Error = error,
                 Message = errormessage,
                 OccuranceSpace = controller,
+                CreatedAt = DateTime.Now
             };
 
             _aMSDbContext.errorLogs.Add(log);
