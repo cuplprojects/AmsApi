@@ -161,30 +161,77 @@ namespace AmsApi.Controllers
                 return NotFound();
             }
 
-            // Fetch all related documents
+            // Get CategoryName
+            var categoryName = await _context.assetCategories
+                .Where(c => c.AssetCategoryID == asset.AssetCategoryID)
+                .Select(c => c.CategoryName)
+                .FirstOrDefaultAsync();
+
+            // Get AssetTypeName
+            var assetTypeName = await _context.AssetTypes
+                .Where(t => t.AssetTypeID == asset.AssetTypeID)
+                .Select(t => t.AssetTypeName)
+                .FirstOrDefaultAsync();
+
+            // Get Status (from AssetStatus)
+            var status = await _context.assetStatus
+                .Where(s => s.AssetStatusID == asset.AssetStatusID)
+                .Select(s => s.Status)
+                .FirstOrDefaultAsync();
+
+            // Get related documents
             var documents = await _context.AssetDocuments
-                                          .Where(d => d.AssetID == id)
-                                          .Select(d => new
-                                          {
-                                              d.AssetDocumentID,
-                                              d.Description,
-                                              d.FileName,
-                                              d.FilePath,
-                                              d.UploadedAt
-                                          })
-                                          .ToListAsync();
+                .Where(d => d.AssetID == id)
+                .Select(d => new
+                {
+                    d.AssetDocumentID,
+                    d.Description,
+                    d.FileName,
+                    d.FilePath,
+                    d.UploadedAt
+                })
+                .ToListAsync();
+
+            // Flattened asset info with category, type, and status
+            var assetInfo = new
+            {
+                asset.AssetID,
+                asset.AssetsName,
+                asset.AssetCategoryID,
+                CategoryName = categoryName,
+                asset.AssetTypeID,
+                AssetTypeName = assetTypeName,
+                asset.AssetStatusID,
+                Status = status,
+                asset.SerialNumberModelNumber,
+                asset.ModelDetails,
+                asset.BarcodeQRCode,
+                asset.PurchaseDate,
+                asset.CostPrice,
+                asset.SupplierVendorName,
+                asset.InvoiceNumber,
+                asset.WarrantyStartDate,
+                asset.WarrantyEndDate,
+                asset.AssetCondition,
+                asset.RemarksNotes,
+                asset.DefaultLocation
+            };
 
             var response = new
             {
-                assetInfo = asset,
-                document = documents,            // returns List not single item
-                assignmentDetails = new object[] { },  // empty array
-                history = new object[] { },            // empty array
-                maintenance = new object[] { }         // empty array
+                assetInfo = assetInfo,
+                document = documents,
+                assignmentDetails = new object[] { },
+                history = new object[] { },
+                maintenance = new object[] { }
             };
 
             return Ok(response);
         }
+
+
+
+
 
 
         public class AssetDetailsDto
