@@ -27,12 +27,12 @@ namespace AmsApi.Controllers
 
         [HttpGet("GetAssets")]
         public async Task<ActionResult<object>> GetAssets(
-        [FromQuery] string? sortBy = "AssetsName",
-        [FromQuery] string? sortOrder = "asc",
-        [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 10,
-        [FromQuery] string? search = null,
-        [FromQuery] Dictionary<string, string>? filters = null)
+         [FromQuery] string? sortBy = "AssetsName",
+         [FromQuery] string? sortOrder = "asc",
+         [FromQuery] int page = 1,
+         [FromQuery] int pageSize = 10,
+         [FromQuery] string? search = null,
+         [FromQuery] Dictionary<string, string>? filters = null)
         {
             try
             {
@@ -78,7 +78,8 @@ namespace AmsApi.Controllers
                         (a.RemarksNotes != null && a.RemarksNotes.ToLower().Contains(lowerSearch)) ||
                         (a.DefaultLocation != null && a.DefaultLocation.ToLower().Contains(lowerSearch)) ||
                         (a.AssetTypeName != null && a.AssetTypeName.ToLower().Contains(lowerSearch)) ||
-                        (a.Status != null && a.Status.ToLower().Contains(lowerSearch))
+                        (a.Status != null && a.Status.ToLower().Contains(lowerSearch)) ||
+                        (a.SerialNumberModelNumber != null && a.SerialNumberModelNumber.ToLower().Contains(lowerSearch))
                     );
                 }
 
@@ -97,6 +98,13 @@ namespace AmsApi.Controllers
                             "barcodeqrcode" => query.Where(a => a.BarcodeQRCode != null && a.BarcodeQRCode.ToLower().Contains(value)),
                             "assetsname" => query.Where(a => a.AssetsName != null && a.AssetsName.ToLower().Contains(value)),
                             "assettypename" => query.Where(a => a.AssetTypeName != null && a.AssetTypeName.ToLower().Contains(value)),
+                            "serialnumbermodelnumber" => query.Where(a => a.SerialNumberModelNumber != null && a.SerialNumberModelNumber.ToLower().Contains(value)),
+                            "assetcondition" => query.Where(a => a.AssetCondition != null && a.AssetCondition.ToLower().Contains(value)),
+                            "defaultlocation" => query.Where(a => a.DefaultLocation != null && a.DefaultLocation.ToLower().Contains(value)),
+                            "suppliervendorname" => query.Where(a => a.SupplierVendorName != null && a.SupplierVendorName.ToLower().Contains(value)),
+                            "invoicenumber" => query.Where(a => a.InvoiceNumber != null && a.InvoiceNumber.ToLower().Contains(value)),
+                            "remarksnotes" => query.Where(a => a.RemarksNotes != null && a.RemarksNotes.ToLower().Contains(value)),
+                            "status" => query.Where(a => a.Status != null && a.Status.ToLower().Contains(value)),
                             _ => query
                         };
                     }
