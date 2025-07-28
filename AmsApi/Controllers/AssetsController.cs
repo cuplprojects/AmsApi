@@ -27,12 +27,12 @@ namespace AmsApi.Controllers
 
         [HttpGet("GetAssets")]
         public async Task<ActionResult<object>> GetAssets(
-         [FromQuery] string? sortBy = "AssetsName",
-         [FromQuery] string? sortOrder = "asc",
-         [FromQuery] int page = 1,
-         [FromQuery] int pageSize = 10,
-         [FromQuery] string? search = null,
-         [FromQuery] Dictionary<string, string>? filters = null)
+      [FromQuery] string? sortBy = "AssetsName",
+      [FromQuery] string? sortOrder = "asc",
+      [FromQuery] int page = 1,
+      [FromQuery] int pageSize = 10,
+      [FromQuery] string? search = null,
+      [FromQuery] Dictionary<string, string>? filters = null)
         {
             try
             {
@@ -118,10 +118,21 @@ namespace AmsApi.Controllers
                     {
                         "assetid" => isAsc ? query.OrderBy(a => a.AssetID) : query.OrderByDescending(a => a.AssetID),
                         "assetsname" => isAsc ? query.OrderBy(a => a.AssetsName) : query.OrderByDescending(a => a.AssetsName),
+                        "assetcategoryid" => isAsc ? query.OrderBy(a => a.AssetCategoryID) : query.OrderByDescending(a => a.AssetCategoryID),
                         "categoryname" => isAsc ? query.OrderBy(a => a.CategoryName) : query.OrderByDescending(a => a.CategoryName),
-                        "assettypename" => isAsc ? query.OrderBy(a => a.AssetTypeName) : query.OrderByDescending(a => a.AssetTypeName),
+                        "assetstatusid" => isAsc ? query.OrderBy(a => a.AssetStatusID) : query.OrderByDescending(a => a.AssetStatusID),
+                        "status" => isAsc ? query.OrderBy(a => a.Status) : query.OrderByDescending(a => a.Status),
+                        "serialnumbermodelnumber" => isAsc ? query.OrderBy(a => a.SerialNumberModelNumber) : query.OrderByDescending(a => a.SerialNumberModelNumber),
                         "modeldetails" => isAsc ? query.OrderBy(a => a.ModelDetails) : query.OrderByDescending(a => a.ModelDetails),
-                        _ => query.OrderBy(a => a.AssetID)
+                        "barcodeqrcode" => isAsc ? query.OrderBy(a => a.BarcodeQRCode) : query.OrderByDescending(a => a.BarcodeQRCode),
+                        "suppliervendorname" => isAsc ? query.OrderBy(a => a.SupplierVendorName) : query.OrderByDescending(a => a.SupplierVendorName),
+                        "invoicenumber" => isAsc ? query.OrderBy(a => a.InvoiceNumber) : query.OrderByDescending(a => a.InvoiceNumber),
+                        "assetcondition" => isAsc ? query.OrderBy(a => a.AssetCondition) : query.OrderByDescending(a => a.AssetCondition),
+                        "remarksnotes" => isAsc ? query.OrderBy(a => a.RemarksNotes) : query.OrderByDescending(a => a.RemarksNotes),
+                        "defaultlocation" => isAsc ? query.OrderBy(a => a.DefaultLocation) : query.OrderByDescending(a => a.DefaultLocation),
+                        "assettypeid" => isAsc ? query.OrderBy(a => a.AssetTypeID) : query.OrderByDescending(a => a.AssetTypeID),
+                        "assettypename" => isAsc ? query.OrderBy(a => a.AssetTypeName) : query.OrderByDescending(a => a.AssetTypeName),
+                        _ => isAsc ? query.OrderBy(a => a.AssetID) : query.OrderByDescending(a => a.AssetID)
                     };
                 }
 
@@ -151,6 +162,7 @@ namespace AmsApi.Controllers
                 return StatusCode(500, $"Internal server error occurred while retrieving assets: {ex.Message}");
             }
         }
+
 
 
 
