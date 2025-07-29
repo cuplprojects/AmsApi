@@ -327,5 +327,8 @@ namespace AmsApi.Controllers
         {
             return _context.Assets.Any(e => e.AssetID == id);
         }
+
+       
+
     }
 }
