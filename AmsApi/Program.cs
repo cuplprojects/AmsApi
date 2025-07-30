@@ -1,5 +1,6 @@
 using AmsApi.Data;
 using AmsApi.Services;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.EntityFrameworkCore;
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,6 +20,12 @@ builder.Services.AddCors(options =>
                .AllowAnyHeader();
     });
 });
+
+builder.Services.Configure<FormOptions>(options =>
+{
+    options.MultipartBodyLengthLimit = 104857600; // 100 MB
+});
+
 
 builder.Services.AddDbContext<AMSDbContext>(options =>
     options.UseMySql(builder.Configuration.GetConnectionString("DefaultAppDBConnection"), new MySqlServerVersion(new Version(8, 0, 23))));
