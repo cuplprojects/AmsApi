@@ -36,6 +36,7 @@
   <ItemGroup>
     <Folder Include="wwwroot\Images\" />
     <Folder Include="wwwroot\Documents\" />
+    <Folder Include="wwwroot\AssignmentDoc\" />
   </ItemGroup>
 
 </Project>
