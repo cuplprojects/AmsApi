@@ -2,10 +2,13 @@ using AmsApi.Data;
 using AmsApi.Services;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.EntityFrameworkCore;
+using OfficeOpenXml;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
+ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -30,6 +33,11 @@ builder.Services.Configure<FormOptions>(options =>
 builder.Services.AddDbContext<AMSDbContext>(options =>
     options.UseMySql(builder.Configuration.GetConnectionString("DefaultAppDBConnection"), new MySqlServerVersion(new Version(8, 0, 23))));
 builder.Services.AddScoped<ILoggerService, LoggerService>();
+builder.Services.Configure<FormOptions>(options =>
+{
+    options.MultipartBodyLengthLimit = 104857600; // 100 MB
+});
+
 
 
 var app = builder.Build();

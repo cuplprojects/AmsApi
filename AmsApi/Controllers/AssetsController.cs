@@ -337,6 +337,9 @@ namespace AmsApi.Controllers
             if (file == null || file.Length == 0)
                 return BadRequest("No file uploaded.");
 
+            // Set EPPlus license context (for non-commercial use)
+            ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+
             using var stream = new MemoryStream();
             await file.CopyToAsync(stream);
             using var package = new ExcelPackage(stream);
@@ -348,11 +351,11 @@ namespace AmsApi.Controllers
             var assets = new List<Asset>();
             var rowCount = worksheet.Dimension.Rows;
 
-            for (int row = 2; row <= rowCount; row++) // Assuming row 1 is header
+            for (int row = 2; row <= rowCount; row++)
             {
-                var categoryName = worksheet.Cells[row, 3].Text.Trim(); // CategoryName
-                var assetTypeName = worksheet.Cells[row, 4].Text.Trim(); // AssetTypeName
-                var statusName = worksheet.Cells[row, 13].Text.Trim();   // Status
+                var categoryName = worksheet.Cells[row, 3].Text.Trim();     // CategoryName
+                var assetTypeName = worksheet.Cells[row, 4].Text.Trim();    // AssetTypeName
+                var statusName = worksheet.Cells[row, 13].Text.Trim();      // Status
 
                 var assetCategory = await _context.assetCategories
                     .FirstOrDefaultAsync(x => x.CategoryName == categoryName);
@@ -360,6 +363,10 @@ namespace AmsApi.Controllers
                     .FirstOrDefaultAsync(x => x.AssetTypeName == assetTypeName);
                 var assetStatus = await _context.assetStatus
                     .FirstOrDefaultAsync(x => x.Status == statusName);
+
+                // Skip row if any required mapping is missing
+                if (assetCategory == null || assetType == null || assetStatus == null)
+                    continue;
 
                 var asset = new Asset
                 {
@@ -377,18 +384,26 @@ namespace AmsApi.Controllers
                     RemarksNotes = worksheet.Cells[row, 15].Text,
                     DefaultLocation = worksheet.Cells[row, 16].Text,
 
-                    AssetCategoryID = assetCategory?.AssetCategoryID,
-                    AssetTypeID = assetType?.AssetTypeID ?? 0,
-                    AssetStatusID = assetStatus?.AssetStatusID
+                    AssetCategoryID = assetCategory.AssetCategoryID,
+                    AssetTypeID = assetType.AssetTypeID,
+                    AssetStatusID = assetStatus.AssetStatusID
                 };
 
                 assets.Add(asset);
             }
 
-            _context.Assets.AddRange(assets);
-            await _context.SaveChangesAsync();
+            if (assets.Count > 0)
+            {
+                _context.Assets.AddRange(assets);
+                await _context.SaveChangesAsync();
+            }
 
-            return Ok(new { Message = "Assets uploaded successfully", Count = assets.Count });
+            return Ok(new
+            {
+                Message = "Assets upload completed",
+                UploadedCount = assets.Count,
+                SkippedCount = rowCount - 1 - assets.Count // minus header row
+            });
         }
 
         private static DateTime? TryParseDate(string input)
@@ -400,6 +415,7 @@ namespace AmsApi.Controllers
         {
             return int.TryParse(input, out var result) ? result : null;
         }
+
 
 
     }
