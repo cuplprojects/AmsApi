@@ -76,13 +76,81 @@ namespace AmsApi.Controllers
         // POST: api/Assignments
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<Assignment>> PostAssignment(Assignment assignment)
+        public async Task<IActionResult> PostAssignment([FromForm] AssignmentInput input)
         {
-            _context.Assignments.Add(assignment);
-            await _context.SaveChangesAsync();
+            try
+            {
+                if (input.Files == null || input.Files.Count == 0)
+                {
+                    return BadRequest("At least one file is required.");
+                }
 
-            return CreatedAtAction("GetAssignment", new { id = assignment.AssignmentID }, assignment);
+                string folderName = "AssignmentDoc";
+                string rootPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", folderName);
+                if (!Directory.Exists(rootPath))
+                {
+                    Directory.CreateDirectory(rootPath);
+                }
+
+                List<string> filePaths = new();
+
+                foreach (var file in input.Files)
+                {
+                    if (file.Length > 0)
+                    {
+                        string uniqueFileName = $"{Guid.NewGuid()}_{Path.GetFileName(file.FileName)}";
+                        string absolutePath = Path.Combine(rootPath, uniqueFileName);
+                        string relativePath = Path.Combine(folderName, uniqueFileName); // For DB
+
+                        using (var stream = new FileStream(absolutePath, FileMode.Create))
+                        {
+                            await file.CopyToAsync(stream);
+                        }
+
+                        filePaths.Add(relativePath);
+                    }
+                }
+
+                var assignment = new Assignment
+                {
+                    AssetID = input.AssetID,
+                    AssignedTo = input.AssignedTo,
+                    AssignedById = input.AssignedById,
+                    DepartmentID = input.DepartmentID,
+                    BranchID = input.BranchID,
+                    Location = input.Location,
+                    Remarks = input.Remarks,
+                    CreatedDate = DateTime.Now,
+                    AssignmentDocuments = System.Text.Json.JsonSerializer.Serialize(filePaths)
+                };
+
+                _context.Assignments.Add(assignment);
+                await _context.SaveChangesAsync();
+
+                return CreatedAtAction("GetAssignment", new { id = assignment.AssignmentID }, assignment);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, "Internal server error: " + ex.Message);
+            }
         }
+
+
+
+        public class AssignmentInput
+        {
+            public int AssetID { get; set; }
+            public int? AssignedTo { get; set; }
+            public int AssignedById { get; set; }
+            public int? DepartmentID { get; set; }
+            public int? BranchID { get; set; }
+            public string? Location { get; set; }
+            public string? Remarks { get; set; }
+
+            [FromForm]
+            public List<IFormFile> Files { get; set; } = new();
+        }
+
 
         // DELETE: api/Assignments/5
         [HttpDelete("{id}")]
