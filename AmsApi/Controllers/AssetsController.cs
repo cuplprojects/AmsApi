@@ -8,6 +8,8 @@ using Microsoft.EntityFrameworkCore;
 using AmsApi.Data;
 using AmsApi.Models;
 using AmsApi.Services;
+using OfficeOpenXml;
+using System.Globalization;
 
 namespace AmsApi.Controllers
 {
@@ -328,7 +330,93 @@ namespace AmsApi.Controllers
             return _context.Assets.Any(e => e.AssetID == id);
         }
 
-       
+
+        [HttpPost("upload-assets-excel")]
+        public async Task<IActionResult> UploadAssetsExcel(IFormFile file)
+        {
+            if (file == null || file.Length == 0)
+                return BadRequest("No file uploaded.");
+
+            // Set EPPlus license context (for non-commercial use)
+            ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+
+            using var stream = new MemoryStream();
+            await file.CopyToAsync(stream);
+            using var package = new ExcelPackage(stream);
+            var worksheet = package.Workbook.Worksheets[0];
+
+            if (worksheet == null)
+                return BadRequest("Invalid Excel file.");
+
+            var assets = new List<Asset>();
+            var rowCount = worksheet.Dimension.Rows;
+
+            for (int row = 2; row <= rowCount; row++)
+            {
+                var categoryName = worksheet.Cells[row, 3].Text.Trim();     // CategoryName
+                var assetTypeName = worksheet.Cells[row, 4].Text.Trim();    // AssetTypeName
+                var statusName = worksheet.Cells[row, 13].Text.Trim();      // Status
+
+                var assetCategory = await _context.assetCategories
+                    .FirstOrDefaultAsync(x => x.CategoryName == categoryName);
+                var assetType = await _context.AssetTypes
+                    .FirstOrDefaultAsync(x => x.AssetTypeName == assetTypeName);
+                var assetStatus = await _context.assetStatus
+                    .FirstOrDefaultAsync(x => x.Status == statusName);
+
+                // Skip row if any required mapping is missing
+                if (assetCategory == null || assetType == null || assetStatus == null)
+                    continue;
+
+                var asset = new Asset
+                {
+                    AssetsName = worksheet.Cells[row, 1].Text,
+                    SerialNumberModelNumber = worksheet.Cells[row, 5].Text,
+                    ModelDetails = worksheet.Cells[row, 6].Text,
+                    BarcodeQRCode = worksheet.Cells[row, 7].Text,
+                    PurchaseDate = TryParseDate(worksheet.Cells[row, 8].Text),
+                    CostPrice = TryParseInt(worksheet.Cells[row, 9].Text),
+                    SupplierVendorName = worksheet.Cells[row, 10].Text,
+                    InvoiceNumber = worksheet.Cells[row, 11].Text,
+                    WarrantyStartDate = TryParseDate(worksheet.Cells[row, 12].Text),
+                    WarrantyEndDate = TryParseDate(worksheet.Cells[row, 13].Text),
+                    AssetCondition = worksheet.Cells[row, 14].Text,
+                    RemarksNotes = worksheet.Cells[row, 15].Text,
+                    DefaultLocation = worksheet.Cells[row, 16].Text,
+
+                    AssetCategoryID = assetCategory.AssetCategoryID,
+                    AssetTypeID = assetType.AssetTypeID,
+                    AssetStatusID = assetStatus.AssetStatusID
+                };
+
+                assets.Add(asset);
+            }
+
+            if (assets.Count > 0)
+            {
+                _context.Assets.AddRange(assets);
+                await _context.SaveChangesAsync();
+            }
+
+            return Ok(new
+            {
+                Message = "Assets upload completed",
+                UploadedCount = assets.Count,
+                SkippedCount = rowCount - 1 - assets.Count // minus header row
+            });
+        }
+
+        private static DateTime? TryParseDate(string input)
+        {
+            return DateTime.TryParse(input, out var result) ? result : null;
+        }
+
+        private static int? TryParseInt(string input)
+        {
+            return int.TryParse(input, out var result) ? result : null;
+        }
+
+
 
     }
 }
