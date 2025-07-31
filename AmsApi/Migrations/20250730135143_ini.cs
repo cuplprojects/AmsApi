@@ -7,12 +7,27 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace AmsApi.Migrations
 {
     /// <inheritdoc />
-    public partial class initial : Migration
+    public partial class ini : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.AlterDatabase()
+                .Annotation("MySql:CharSet", "utf8mb4");
+
+            migrationBuilder.CreateTable(
+                name: "assetCategories",
+                columns: table => new
+                {
+                    AssetCategoryID = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
+                    CategoryName = table.Column<string>(type: "longtext", nullable: true)
+                        .Annotation("MySql:CharSet", "utf8mb4")
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_assetCategories", x => x.AssetCategoryID);
+                })
                 .Annotation("MySql:CharSet", "utf8mb4");
 
             migrationBuilder.CreateTable(
@@ -67,8 +82,8 @@ namespace AmsApi.Migrations
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
                     AssetsName = table.Column<string>(type: "varchar(255)", maxLength: 255, nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    AssetType = table.Column<int>(type: "int", nullable: false),
                     AssetCategoryID = table.Column<int>(type: "int", nullable: true),
+                    AssetTypeID = table.Column<int>(type: "int", nullable: false),
                     SerialNumberModelNumber = table.Column<string>(type: "varchar(255)", maxLength: 255, nullable: true)
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     ModelDetails = table.Column<string>(type: "varchar(1000)", maxLength: 1000, nullable: true)
@@ -83,10 +98,7 @@ namespace AmsApi.Migrations
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     WarrantyStartDate = table.Column<DateTime>(type: "datetime(6)", nullable: true),
                     WarrantyEndDate = table.Column<DateTime>(type: "datetime(6)", nullable: true),
-                    AMCDetails = table.Column<string>(type: "varchar(500)", maxLength: 500, nullable: true)
-                        .Annotation("MySql:CharSet", "utf8mb4"),
-                    CurrentStatus = table.Column<string>(type: "varchar(20)", maxLength: 20, nullable: true)
-                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    AssetStatusID = table.Column<int>(type: "int", nullable: true),
                     AssetCondition = table.Column<string>(type: "varchar(20)", maxLength: 20, nullable: true)
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     RemarksNotes = table.Column<string>(type: "varchar(1000)", maxLength: 1000, nullable: true)
@@ -97,6 +109,21 @@ namespace AmsApi.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Assets", x => x.AssetID);
+                })
+                .Annotation("MySql:CharSet", "utf8mb4");
+
+            migrationBuilder.CreateTable(
+                name: "assetStatus",
+                columns: table => new
+                {
+                    AssetStatusID = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
+                    Status = table.Column<string>(type: "longtext", nullable: true)
+                        .Annotation("MySql:CharSet", "utf8mb4")
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_assetStatus", x => x.AssetStatusID);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
 
@@ -122,12 +149,18 @@ namespace AmsApi.Migrations
                     AssignmentID = table.Column<int>(type: "int", nullable: false)
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
                     AssetID = table.Column<int>(type: "int", nullable: false),
-                    AssignedTo = table.Column<int>(type: "int", nullable: false),
-                    DepartmentID = table.Column<int>(type: "int", nullable: false),
-                    BranchID = table.Column<int>(type: "int", nullable: false),
-                    Location = table.Column<string>(type: "varchar(255)", maxLength: 255, nullable: true)
+                    AssignedTo = table.Column<int>(type: "int", nullable: true),
+                    AssignedById = table.Column<int>(type: "int", nullable: false),
+                    DepartmentID = table.Column<int>(type: "int", nullable: true),
+                    BranchID = table.Column<int>(type: "int", nullable: true),
+                    Company = table.Column<string>(type: "varchar(255)", maxLength: 255, nullable: true)
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     AssignmentDocuments = table.Column<string>(type: "longtext", nullable: true)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    CreatedDate = table.Column<DateTime>(type: "datetime(6)", nullable: false),
+                    UnassignedAt = table.Column<string>(type: "longtext", nullable: true)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    Remarks = table.Column<string>(type: "longtext", nullable: true)
                         .Annotation("MySql:CharSet", "utf8mb4")
                 },
                 constraints: table =>
@@ -202,6 +235,50 @@ namespace AmsApi.Migrations
                 .Annotation("MySql:CharSet", "utf8mb4");
 
             migrationBuilder.CreateTable(
+                name: "errorLogs",
+                columns: table => new
+                {
+                    ErrorID = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
+                    Error = table.Column<string>(type: "longtext", nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    Message = table.Column<string>(type: "longtext", nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    OccuranceSpace = table.Column<string>(type: "longtext", nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    CreatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_errorLogs", x => x.ErrorID);
+                })
+                .Annotation("MySql:CharSet", "utf8mb4");
+
+            migrationBuilder.CreateTable(
+                name: "eventLogs",
+                columns: table => new
+                {
+                    EventID = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
+                    Event = table.Column<string>(type: "longtext", nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    Category = table.Column<string>(type: "longtext", nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    EventTriggeredBy = table.Column<int>(type: "int", nullable: false),
+                    LoggedAT = table.Column<DateTime>(type: "datetime(6)", nullable: false),
+                    OldValue = table.Column<string>(type: "longtext", nullable: true)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    NewValue = table.Column<string>(type: "longtext", nullable: true)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    CreatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_eventLogs", x => x.EventID);
+                })
+                .Annotation("MySql:CharSet", "utf8mb4");
+
+            migrationBuilder.CreateTable(
                 name: "SellOrDisposes",
                 columns: table => new
                 {
@@ -263,10 +340,16 @@ namespace AmsApi.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
+                name: "assetCategories");
+
+            migrationBuilder.DropTable(
                 name: "AssetDocuments");
 
             migrationBuilder.DropTable(
                 name: "AssetRequests");
+
+            migrationBuilder.DropTable(
+                name: "assetStatus");
 
             migrationBuilder.DropTable(
                 name: "AssetTypes");
@@ -282,6 +365,12 @@ namespace AmsApi.Migrations
 
             migrationBuilder.DropTable(
                 name: "Employees");
+
+            migrationBuilder.DropTable(
+                name: "errorLogs");
+
+            migrationBuilder.DropTable(
+                name: "eventLogs");
 
             migrationBuilder.DropTable(
                 name: "SellOrDisposes");
