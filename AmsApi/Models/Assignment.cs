@@ -34,7 +34,7 @@ namespace AmsApi.Models
         [StringLength(255)]
         public string? Company { get; set; }
 
-        public string? AssignmentDocuments { get; set; } // JSON string; for complex data, use a related table or DTO
+        public string? AssignmentDocuments { get; set; }
         public DateTime CreatedDate { get; set; }
         public string? UnassignedAt { get; set; }
         public string? Remarks { get; set; }

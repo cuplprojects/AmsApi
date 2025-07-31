@@ -159,10 +159,6 @@ namespace AmsApi.Controllers
 
 
 
-
-
-
-
         public class AssignmentUploadRequest
         {
             public int? AssetID { get; set; }
@@ -176,6 +172,47 @@ namespace AmsApi.Controllers
         }
 
 
+
+
+        [HttpPost("unassign-asset")]
+        public async Task<IActionResult> UnassignAsset([FromQuery] int assetId)
+        {
+            try
+            {
+                var asset = await _context.Assets.FindAsync(assetId);
+                if (asset == null)
+                    return NotFound("Asset not found.");
+
+                // Check if asset is already unassigned
+                if (asset.AssetStatusID == 2)
+                    return BadRequest("Asset is already unassigned.");
+
+                // Get the most recent assignment for the asset
+                var latestAssignment = await _context.Assignments
+                    .Where(a => a.AssetID == assetId)
+                    .OrderByDescending(a => a.CreatedDate)
+                    .FirstOrDefaultAsync();
+
+                if (latestAssignment == null)
+                    return BadRequest("No assignment record found for this asset.");
+
+                // Set unassigned date and update status
+                latestAssignment.UnassignedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+                asset.AssetStatusID = 2;
+
+                await _context.SaveChangesAsync();
+
+                return Ok(new { message = "Asset successfully unassigned." });
+            }
+            catch (DbUpdateException dbEx)
+            {
+                return StatusCode(500, $"DB Update Error: {dbEx.InnerException?.Message ?? dbEx.Message}");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"General Error: {ex.Message}");
+            }
+        }
 
 
 
