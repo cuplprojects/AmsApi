@@ -1,12 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using AmsApi.Data;
+using AmsApi.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using AmsApi.Data;
-using AmsApi.Models;
+using OfficeOpenXml;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using System.Text.Json;
+
 
 namespace AmsApi.Controllers
 {
@@ -15,10 +18,12 @@ namespace AmsApi.Controllers
     public class AssignmentsController : ControllerBase
     {
         private readonly AMSDbContext _context;
+        private readonly IWebHostEnvironment _env;
 
-        public AssignmentsController(AMSDbContext context)
+        public AssignmentsController(AMSDbContext context, IWebHostEnvironment env)
         {
             _context = context;
+            _env = env;
         }
 
         // GET: api/Assignments
@@ -75,81 +80,140 @@ namespace AmsApi.Controllers
 
         // POST: api/Assignments
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPost]
-        public async Task<IActionResult> PostAssignment([FromForm] AssignmentInput input)
+        [HttpPost("upload-assignment")]
+        public async Task<IActionResult> UploadAssignment([FromForm] AssignmentUploadRequest input)
         {
             try
             {
-                if (input.Files == null || input.Files.Count == 0)
+                // Ensure AssetID and AssignedTo are provided
+                if (input.AssetID == null || input.AssignedTo == null)
+                    return BadRequest("AssetID and AssignedTo are required.");
+
+                // Check if the asset is already assigned
+                var asset = await _context.Assets.FindAsync(input.AssetID.Value);
+                if (asset == null)
+                    return NotFound("Asset not found.");
+
+                if (asset.AssetStatusID == 1)
+                    return BadRequest("Asset is already assigned.");
+
+                var savedFilePaths = new List<string>();
+                var wwwRootPath = _env.WebRootPath;
+                var folderPath = Path.Combine(wwwRootPath, "AssignmentDocuments");
+
+                if (!Directory.Exists(folderPath))
                 {
-                    return BadRequest("At least one file is required.");
+                    Directory.CreateDirectory(folderPath);
                 }
 
-                string folderName = "AssignmentDoc";
-                string rootPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", folderName);
-                if (!Directory.Exists(rootPath))
+                // Only process files if provided
+                if (input.Files != null)
                 {
-                    Directory.CreateDirectory(rootPath);
-                }
-
-                List<string> filePaths = new();
-
-                foreach (var file in input.Files)
-                {
-                    if (file.Length > 0)
+                    foreach (var file in input.Files)
                     {
-                        string uniqueFileName = $"{Guid.NewGuid()}_{Path.GetFileName(file.FileName)}";
-                        string absolutePath = Path.Combine(rootPath, uniqueFileName);
-                        string relativePath = Path.Combine(folderName, uniqueFileName); // For DB
-
-                        using (var stream = new FileStream(absolutePath, FileMode.Create))
+                        if (file != null && file.Length > 0)
                         {
-                            await file.CopyToAsync(stream);
-                        }
+                            var fileName = Guid.NewGuid().ToString() + Path.GetExtension(file.FileName);
+                            var filePath = Path.Combine(folderPath, fileName);
 
-                        filePaths.Add(relativePath);
+                            using (var stream = new FileStream(filePath, FileMode.Create))
+                            {
+                                await file.CopyToAsync(stream);
+                            }
+
+                            savedFilePaths.Add("/AssignmentDocuments/" + fileName); // Use relative path
+                        }
                     }
                 }
 
                 var assignment = new Assignment
                 {
-                    AssetID = input.AssetID,
-                    AssignedTo = input.AssignedTo,
-                    AssignedById = input.AssignedById,
-                    DepartmentID = input.DepartmentID,
-                    BranchID = input.BranchID,
-                    Location = input.Location,
-                    Remarks = input.Remarks,
-                    CreatedDate = DateTime.Now,
-                    AssignmentDocuments = System.Text.Json.JsonSerializer.Serialize(filePaths)
+                    AssetID = input.AssetID.Value,
+                    AssignedTo = input.AssignedTo.Value,
+                    AssignedById = input.AssignedById ?? 0,
+                    DepartmentID = input.DepartmentID ?? 0,
+                    Company = string.IsNullOrWhiteSpace(input.Company) ? null : input.Company.Trim(),
+                    Remarks = string.IsNullOrWhiteSpace(input.Remarks) ? null : input.Remarks.Trim(),
+                    AssignmentDocuments = JsonSerializer.Serialize(savedFilePaths),
+                    CreatedDate = DateTime.Now
                 };
 
                 _context.Assignments.Add(assignment);
+
+                // Mark asset as assigned
+                asset.AssetStatusID = 1;
+
                 await _context.SaveChangesAsync();
 
-                return CreatedAtAction("GetAssignment", new { id = assignment.AssignmentID }, assignment);
+                return Ok(new { message = "Assignment uploaded and asset status updated successfully." });
+            }
+            catch (DbUpdateException dbEx)
+            {
+                return StatusCode(500, $"DB Update Error: {dbEx.InnerException?.Message ?? dbEx.Message}");
             }
             catch (Exception ex)
             {
-                return StatusCode(500, "Internal server error: " + ex.Message);
+                return StatusCode(500, $"General Error: {ex.Message}");
             }
         }
 
 
 
-        public class AssignmentInput
+        public class AssignmentUploadRequest
         {
-            public int AssetID { get; set; }
+            public int? AssetID { get; set; }
             public int? AssignedTo { get; set; }
-            public int AssignedById { get; set; }
+            public int? AssignedById { get; set; }
             public int? DepartmentID { get; set; }
-            public int? BranchID { get; set; }
+            public string? Company { get; set; }
             public string? Location { get; set; }
             public string? Remarks { get; set; }
-
-            [FromForm]
-            public List<IFormFile> Files { get; set; } = new();
+            public List<IFormFile>? Files { get; set; }
         }
+
+
+
+
+        [HttpPost("unassign-asset")]
+        public async Task<IActionResult> UnassignAsset([FromQuery] int assetId)
+        {
+            try
+            {
+                var asset = await _context.Assets.FindAsync(assetId);
+                if (asset == null)
+                    return NotFound("Asset not found.");
+
+                // Check if asset is already unassigned
+                if (asset.AssetStatusID == 2)
+                    return BadRequest("Asset is already unassigned.");
+
+                // Get the most recent assignment for the asset
+                var latestAssignment = await _context.Assignments
+                    .Where(a => a.AssetID == assetId)
+                    .OrderByDescending(a => a.CreatedDate)
+                    .FirstOrDefaultAsync();
+
+                if (latestAssignment == null)
+                    return BadRequest("No assignment record found for this asset.");
+
+                // Set unassigned date and update status
+                latestAssignment.UnassignedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+                asset.AssetStatusID = 2;
+
+                await _context.SaveChangesAsync();
+
+                return Ok(new { message = "Asset successfully unassigned." });
+            }
+            catch (DbUpdateException dbEx)
+            {
+                return StatusCode(500, $"DB Update Error: {dbEx.InnerException?.Message ?? dbEx.Message}");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"General Error: {ex.Message}");
+            }
+        }
+
 
 
         // DELETE: api/Assignments/5
