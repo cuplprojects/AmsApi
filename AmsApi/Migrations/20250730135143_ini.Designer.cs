@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AmsApi.Migrations
 {
     [DbContext(typeof(AMSDbContext))]
-    [Migration("20250724105152_n")]
-    partial class n
+    [Migration("20250730135143_ini")]
+    partial class ini
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -226,6 +226,22 @@ namespace AmsApi.Migrations
                     b.ToTable("Assets");
                 });
 
+            modelBuilder.Entity("AmsApi.Models.AssetCategory", b =>
+                {
+                    b.Property<int?>("AssetCategoryID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int?>("AssetCategoryID"));
+
+                    b.Property<string>("CategoryName")
+                        .HasColumnType("longtext");
+
+                    b.HasKey("AssetCategoryID");
+
+                    b.ToTable("assetCategories");
+                });
+
             modelBuilder.Entity("AmsApi.Models.AssetDocument", b =>
                 {
                     b.Property<int>("AssetDocumentID")
@@ -339,21 +355,33 @@ namespace AmsApi.Migrations
                     b.Property<int>("AssetID")
                         .HasColumnType("int");
 
-                    b.Property<int>("AssignedTo")
+                    b.Property<int>("AssignedById")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("AssignedTo")
                         .HasColumnType("int");
 
                     b.Property<string>("AssignmentDocuments")
                         .HasColumnType("longtext");
 
-                    b.Property<int>("BranchID")
+                    b.Property<int?>("BranchID")
                         .HasColumnType("int");
 
-                    b.Property<int>("DepartmentID")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Location")
+                    b.Property<string>("Company")
                         .HasMaxLength(255)
                         .HasColumnType("varchar(255)");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int?>("DepartmentID")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Remarks")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("UnassignedAt")
+                        .HasColumnType("longtext");
 
                     b.HasKey("AssignmentID");
 
@@ -368,12 +396,12 @@ namespace AmsApi.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("ErrorID"));
 
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
                     b.Property<string>("Error")
                         .IsRequired()
                         .HasColumnType("longtext");
-
-                    b.Property<DateTime>("LoggedAt")
-                        .HasColumnType("datetime(6)");
 
                     b.Property<string>("Message")
                         .IsRequired()
@@ -400,6 +428,9 @@ namespace AmsApi.Migrations
                         .IsRequired()
                         .HasColumnType("longtext");
 
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
                     b.Property<string>("Event")
                         .IsRequired()
                         .HasColumnType("longtext");
@@ -411,11 +442,9 @@ namespace AmsApi.Migrations
                         .HasColumnType("datetime(6)");
 
                     b.Property<string>("NewValue")
-                        .IsRequired()
                         .HasColumnType("longtext");
 
                     b.Property<string>("OldValue")
-                        .IsRequired()
                         .HasColumnType("longtext");
 
                     b.HasKey("EventID");

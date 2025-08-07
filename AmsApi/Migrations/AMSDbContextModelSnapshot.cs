@@ -364,17 +364,20 @@ namespace AmsApi.Migrations
                     b.Property<int?>("BranchID")
                         .HasColumnType("int");
 
+                    b.Property<string>("Company")
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
+
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("datetime(6)");
 
                     b.Property<int?>("DepartmentID")
                         .HasColumnType("int");
 
-                    b.Property<string>("Location")
-                        .HasMaxLength(255)
-                        .HasColumnType("varchar(255)");
-
                     b.Property<string>("Remarks")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("UnassignedAt")
                         .HasColumnType("longtext");
 
                     b.HasKey("AssignmentID");

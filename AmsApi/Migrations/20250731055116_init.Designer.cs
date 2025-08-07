@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AmsApi.Migrations
 {
     [DbContext(typeof(AMSDbContext))]
-    [Migration("20250724084623_initial")]
-    partial class initial
+    [Migration("20250731055116_init")]
+    partial class init
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -164,10 +164,6 @@ namespace AmsApi.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("AssetID"));
 
-                    b.Property<string>("AMCDetails")
-                        .HasMaxLength(500)
-                        .HasColumnType("varchar(500)");
-
                     b.Property<int?>("AssetCategoryID")
                         .HasColumnType("int");
 
@@ -175,7 +171,10 @@ namespace AmsApi.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("varchar(20)");
 
-                    b.Property<int>("AssetType")
+                    b.Property<int?>("AssetStatusID")
+                        .HasColumnType("int");
+
+                    b.Property<int>("AssetTypeID")
                         .HasColumnType("int");
 
                     b.Property<string>("AssetsName")
@@ -189,10 +188,6 @@ namespace AmsApi.Migrations
 
                     b.Property<int?>("CostPrice")
                         .HasColumnType("int");
-
-                    b.Property<string>("CurrentStatus")
-                        .HasMaxLength(20)
-                        .HasColumnType("varchar(20)");
 
                     b.Property<string>("DefaultLocation")
                         .HasColumnType("longtext");
@@ -229,6 +224,22 @@ namespace AmsApi.Migrations
                     b.HasKey("AssetID");
 
                     b.ToTable("Assets");
+                });
+
+            modelBuilder.Entity("AmsApi.Models.AssetCategory", b =>
+                {
+                    b.Property<int?>("AssetCategoryID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int?>("AssetCategoryID"));
+
+                    b.Property<string>("CategoryName")
+                        .HasColumnType("longtext");
+
+                    b.HasKey("AssetCategoryID");
+
+                    b.ToTable("assetCategories");
                 });
 
             modelBuilder.Entity("AmsApi.Models.AssetDocument", b =>
@@ -299,6 +310,22 @@ namespace AmsApi.Migrations
                     b.ToTable("AssetRequests");
                 });
 
+            modelBuilder.Entity("AmsApi.Models.AssetStatus", b =>
+                {
+                    b.Property<int?>("AssetStatusID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int?>("AssetStatusID"));
+
+                    b.Property<string>("Status")
+                        .HasColumnType("longtext");
+
+                    b.HasKey("AssetStatusID");
+
+                    b.ToTable("assetStatus");
+                });
+
             modelBuilder.Entity("AmsApi.Models.AssetType", b =>
                 {
                     b.Property<int>("AssetTypeID")
@@ -328,25 +355,101 @@ namespace AmsApi.Migrations
                     b.Property<int>("AssetID")
                         .HasColumnType("int");
 
-                    b.Property<int>("AssignedTo")
+                    b.Property<int>("AssignedById")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("AssignedTo")
                         .HasColumnType("int");
 
                     b.Property<string>("AssignmentDocuments")
                         .HasColumnType("longtext");
 
-                    b.Property<int>("BranchID")
+                    b.Property<int?>("BranchID")
                         .HasColumnType("int");
 
-                    b.Property<int>("DepartmentID")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Location")
+                    b.Property<string>("Company")
                         .HasMaxLength(255)
                         .HasColumnType("varchar(255)");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int?>("DepartmentID")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Remarks")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("UnassignedAt")
+                        .HasColumnType("longtext");
 
                     b.HasKey("AssignmentID");
 
                     b.ToTable("Assignments");
+                });
+
+            modelBuilder.Entity("AmsApi.Models.ErrorLog", b =>
+                {
+                    b.Property<int>("ErrorID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("ErrorID"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("Error")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("OccuranceSpace")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.HasKey("ErrorID");
+
+                    b.ToTable("errorLogs");
+                });
+
+            modelBuilder.Entity("AmsApi.Models.EventLogs", b =>
+                {
+                    b.Property<int>("EventID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("EventID"));
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("Event")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<int>("EventTriggeredBy")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("LoggedAT")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("NewValue")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("OldValue")
+                        .HasColumnType("longtext");
+
+                    b.HasKey("EventID");
+
+                    b.ToTable("eventLogs");
                 });
 
             modelBuilder.Entity("AmsApi.Models.TransferDetails", b =>
