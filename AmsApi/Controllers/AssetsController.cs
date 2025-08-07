@@ -106,7 +106,7 @@ namespace AmsApi.Controllers
                             "suppliervendorname" => query.Where(a => a.SupplierVendorName != null && a.SupplierVendorName.ToLower().Contains(value)),
                             "invoicenumber" => query.Where(a => a.InvoiceNumber != null && a.InvoiceNumber.ToLower().Contains(value)),
                             "remarksnotes" => query.Where(a => a.RemarksNotes != null && a.RemarksNotes.ToLower().Contains(value)),
-                            "status" => query.Where(a => a.Status != null && a.Status.ToLower().Contains(value)),
+                            "status" => query.Where(a => a.Status != null && a.Status == value),
                             _ => query
                         };
                     }
